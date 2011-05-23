@@ -1,0 +1,129 @@
+// CList  - Pruebas WinxedGtk
+
+$load 'WinxedGtk.pbc';
+$load 'Mysql.pbc';
+
+//**********************************************************************
+
+namespace WinxedGtk
+{
+
+class VBox;
+class HBox;
+class Window;
+class Label;
+class Button;
+class Entry;
+class Image;
+class CList;
+
+}
+
+using namespace WinxedGtk;
+
+class TableWindow : Window
+{
+    function TableWindow(result)
+    {
+        self.Window(0);
+        self.set_border_width(8);
+        self.set_title('WinxedGtk tree view test');
+        self.signal_connect('destroy',
+            function ()
+            {
+                using WinxedGtk.gtk_main_quit;
+                gtk_main_quit();
+            }
+        );
+        var vbox = new VBox(0, 4);
+        var label = new Label('Table');
+
+        var image = new Image('parrot_small.png');
+        image.show();
+        label.show();
+
+        int ncolumns = result.field_count();
+        var table = new CList(ncolumns);
+        for (int i = 0; i < ncolumns; ++i)
+            table.set_column_title(i, "Column" + string(i + 1));
+        table.column_titles_show();
+        var row;
+        int rowcount = 0;
+        while ((row = result.fetch_row()) != null) {
+            // There is some problem when setting the row, directly.
+            // Until fixed, set with empty strings and then
+            // set each column value at once.
+            string data[ncolumns];
+            for (int i = 0; i < ncolumns; ++i)
+                data[i] = '';
+            table.append(data);
+            for (int i = 0; i < ncolumns; ++i) {
+                string r = row.get(i);
+                if (r == null)
+                    r = '(null)';
+                table.set_text(rowcount, i, r);
+            }
+            ++rowcount;
+        }
+
+        table.show();
+
+        var hbox = new HBox(1, 4);
+
+        var buttonclose = new Button('close');
+        buttonclose.signal_connect('clicked',
+            function ()
+            {
+                self.destroy();
+            }
+        );
+        buttonclose.show();
+        hbox.pack_start(buttonclose, 0, 0, 0);
+
+        vbox.pack_start(image, 0, 0, 4);
+        vbox.pack_start(label, 0, 0, 6);
+        vbox.add(table);
+        vbox.pack_start(hbox, 0, 0, 6);
+
+        self.add(vbox);
+        hbox.show();
+        vbox.show();
+    }
+}
+
+namespace WinxedMysql
+{
+class Connection;
+}
+
+function main(args)
+{
+    using WinxedGtk.init;
+    using WinxedGtk.gtk_main;
+
+    cry(elements(args));
+    string query = elements(args) > 1 ? args[1] : "select * from hello;";
+
+    say('Initializing');
+    init(args);
+
+    var mysql = new WinxedMysql.Connection();
+    say('Mysql version: ', mysql.get_client_info());
+    mysql.connect("localhost", "parrot", "baDworD", "parrot", "utf8");
+
+    mysql.query(query);
+    //mysql.query("describe hello;");
+
+    var result = mysql.use_result();
+
+    var window = new TableWindow(result);
+    result.close();
+
+    window.show();
+    say('Running');
+    gtk_main();
+
+    say('End');
+}
+
+// End

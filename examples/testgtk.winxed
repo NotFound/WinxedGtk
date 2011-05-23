@@ -1,0 +1,115 @@
+// Pruebas gtk
+
+$load 'WinxedGtk.pbc';
+
+//**********************************************************************
+
+namespace WinxedGtk
+{
+
+class VBox;
+class HBox;
+class Window;
+class Label;
+class Button;
+class Entry;
+class Image;
+class Tree;
+class TreeItem;
+
+}
+
+using namespace WinxedGtk;
+
+class SimpleTestWindow : Window
+{
+    var entry;
+    function SimpleTestWindow()
+    {
+        self.Window(0);
+        self.set_border_width(20);
+        self.set_title('WinxedGtk simple test');
+        self.signal_connect('destroy',
+            function ()
+            {
+                using WinxedGtk.gtk_main_quit;
+                gtk_main_quit();
+            }
+        );
+        var vbox = new VBox(1, 4);
+        var label = new Label('This is a simple dialog');
+
+
+        var image = new Image('parrot_small.png');
+        image.show();
+
+        self.entry = new Entry();
+        label.show();
+        self.entry.show();
+        var hbox = new HBox(1, 4);
+
+        var tree = new Tree();
+        tree.show();
+        var item2 = new TreeItem('item');
+        tree.append(item2);
+        item2.show();
+        var subtree = new Tree();
+        var subitem = new TreeItem('subitem');
+        subtree.append(subitem);
+        item2.set_subtree(subtree);
+        subtree.show();
+        subitem.show();
+        item2.show();
+
+        var button = new Button('say hello');
+        button.signal_connect('clicked',
+            function ()
+            {
+                string t = self.entry.get_text();
+                if (t != null && length(t) > 0)
+                    say('hello, ', t);
+                else
+                    say('hello');
+            }
+        );
+        var buttonclose = new Button('close');
+        buttonclose.signal_connect('clicked',
+            function ()
+            {
+                self.destroy();
+            }
+        );
+        button.show();
+        buttonclose.show();
+        hbox.add(button);
+        hbox.add(buttonclose);
+
+        vbox.add(image);
+        vbox.add(label);
+        vbox.add(tree);
+        vbox.add(self.entry);
+        vbox.add(hbox);
+
+        self.add(vbox);
+        hbox.show();
+        vbox.show();
+    }
+}
+
+function main(args)
+{
+    using WinxedGtk.init;
+    using WinxedGtk.gtk_main;
+
+    say('Initializing');
+    init(args);
+
+    var window = new SimpleTestWindow();
+    window.show();
+    say('Running');
+    gtk_main();
+
+    say('End');
+}
+
+// End

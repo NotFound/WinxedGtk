@@ -1,0 +1,357 @@
+// Pruebas gtk
+
+
+//**********************************************************************
+
+namespace WinxedGtk
+{
+
+const int DEBUG = 0;
+
+namespace __private
+{
+
+$include_const 'datatypes.pasm';
+
+function getlib()
+{
+    var lib;
+
+    for (string libname in [
+            'libgtk-x11',
+            'libgtk-x11-2.0',
+            'libgtk-x11-2.0.so',
+            '/usr/lib/libgtk-x11-2.0.so'
+            ] ) {
+        lib = loadlib(libname);
+        if (lib) {
+            if (DEBUG) cry("Loaded library: '", libname, "'");
+            break;
+        }
+    }
+    if (lib == null)
+        throw "Cannot load lib";
+
+    for (;;)
+        yield lib;
+}
+
+function str_to_cstring(string s)
+{
+    var to_cstring = dlfunc(null, 'Parrot_str_to_cstring',   'ppS');
+    return to_cstring(getinterp(), s);
+}
+
+function str_free_cstring(s)
+{
+    var free_cstring = dlfunc(null, 'Parrot_str_free_cstring', 'vp');
+    free_cstring(s);
+}
+
+function string_from_nci(p)
+{
+    var f = dlfunc(null, 'Parrot_str_new', 'SppI');
+    string r = f(getinterp(), p, 0);
+    return r;
+}
+
+function gtk_main_level()
+{
+    var func = dlfunc(getlib(), "gtk_main_level", "i");
+    int i = func();
+    return i;
+}
+
+function mainloop_quit()
+{
+    var quit = false;
+    for (;;) yield quit;
+}
+
+} // namespace __private
+
+//**********************************************************************
+
+using namespace __private;
+
+function init(args)
+{
+    int argc = elements(args);
+    var pargs = new 'ManagedStruct'([ DATATYPE_CSTR, argc, 0]);
+    for (int i = 0; i < argc; ++i)
+        pargs[0,i] = string(args[i]);
+    var pargc = new 'ManagedStruct'([ DATATYPE_PTR, 0, 0]);
+    var func = dlfunc(getlib(), "gtk_init", "ipp");
+    func(pargc, pargs);
+}
+
+function gtk_main()
+{
+    var func = dlfunc(getlib(), "gtk_main_iteration", "i");
+    int i;
+    var quit = mainloop_quit();
+    do i = func(); while (i && ! quit);
+}
+
+function gtk_main_quit()
+{
+    int i = gtk_main_level();
+    if (i == 0)
+        mainloop_quit() =: true;
+    else {
+        var func = dlfunc(getlib(), "gtk_main_quit", "v");
+        func();
+    }
+}
+
+//**********************************************************************
+
+class Widget
+{
+    var gtkw;
+    function __gtkset(gtkw)
+    {
+        self.gtkw = gtkw;
+    }
+    function destroy()
+    {
+        var func = dlfunc(getlib(), "gtk_widget_destroy", "vp");
+        func(self.gtkw);
+    }
+    function show()
+    {
+        var func = dlfunc(getlib(), "gtk_widget_show", "vp");
+        func(self.gtkw);
+    }
+    function signal_connect(string signal_name, callback,
+            data[optional], int has_data[opt_flag])
+    {
+        var func = dlfunc(getlib(), "gtk_signal_connect_full", "ippppPpii");
+        var callback_function = has_data ?
+            function(widget, actualdata)
+            {
+                callback(actualdata);
+            } :
+            function(widget, actualdata)
+            {
+                callback();
+            };
+        var cb_data = has_data ? data : callback_function;
+        var funback;
+        ${ new_callback funback, callback_function, cb_data, 'iUp' };
+        var signame = str_to_cstring(signal_name);
+        if (DEBUG) cry("connecting signal '", signal_name, "'");
+        int r = func(self.gtkw, signame, funback, null, cb_data, null, 1, 1);
+        str_free_cstring(signame);
+    }
+}
+
+class Label : Widget
+{
+    function Label(string text)
+    {
+        var func = dlfunc(getlib(), "gtk_label_new", "pp");
+        var p = str_to_cstring(text);
+        self.__gtkset(func(p));
+        str_free_cstring(p);
+    }
+}
+
+class Entry : Widget
+{
+    function Entry()
+    {
+        var func = dlfunc(getlib(), "gtk_entry_new", "p");
+        self.__gtkset(func());
+    }
+    function get_text()
+    {
+        var func = dlfunc(getlib(), "gtk_entry_get_text", "pp");
+        var t = func(self.gtkw);
+        string result;
+        if (t != null) {
+            result = string_from_nci(t);
+            if (DEBUG) cry("Entry.get_text - got '", result, "'");
+        }
+        return result;
+    }
+}
+
+class Container : Widget
+{
+    function set_border_width(int width)
+    {
+        var func = dlfunc(getlib(), "gtk_container_set_border_width", "vpi");
+        func(self.gtkw, width);
+    }
+    function add(item)
+    {
+        var func = dlfunc(getlib(), "gtk_container_add", "vpp");
+        func(self.gtkw, item.gtkw);
+    }
+}
+
+class Bin : Container
+{
+}
+
+class Box : Container
+{
+    function pack_start(widget, int expand, int fill, int padding)
+    {
+        var func = dlfunc(getlib(), "gtk_box_pack_start", "vppiii");
+        func(self.gtkw, widget.gtkw, expand, fill, padding);
+    }
+}
+
+class VBox : Box
+{
+    function VBox(int homogeneous, int spacing)
+    {
+        var func = dlfunc(getlib(), "gtk_vbox_new", "pii");
+        self.__gtkset(func(homogeneous, spacing));
+    }
+}
+
+class HBox : Box
+{
+    function HBox(int homogeneous, int spacing)
+    {
+        var func = dlfunc(getlib(), "gtk_hbox_new", "pii");
+        self.__gtkset(func(homogeneous, spacing));
+    }
+}
+
+class ScrolledWindow : Bin
+{
+    function ScrolledWindow()
+    {
+        var func = dlfunc(getlib(), "gtk_scrolled_window_new", "ppp");
+        self.__gtkset(func(null, null));
+    }
+    function add_with_viewport(child)
+    {
+        var func = dlfunc(getlib(), "gtk_scrolled_window_add_with_viewport", "vpp");
+	func(self.gtkw, child.gtkw);
+    }
+    function set_policy(int hpolicy, int vpolicy)
+    {
+        var func = dlfunc(getlib(), "gtk_scrolled_window_set_policy", "vpii");
+	func(self.gtkw, hpolicy, vpolicy);
+    }
+}
+
+class Window : Bin
+{
+    function Window(int level)
+    {
+        var func = dlfunc(getlib(), "gtk_window_new", "pi");
+        self.__gtkset(func(0));
+    }
+    function set_title(string title)
+    {
+        var func = dlfunc(getlib(), "gtk_window_set_title", "vpp");
+        var ptitle = str_to_cstring(title);
+        func(self.gtkw, ptitle);
+        str_free_cstring(ptitle);
+    }
+}
+
+class Button : Bin
+{
+    function Button(string label)
+    {
+        var func = dlfunc(getlib(), "gtk_button_new_with_label", "pp");
+        var p = str_to_cstring(label);
+        self.__gtkset(func(p));
+        str_free_cstring(p);
+    }
+}
+
+class TreeItem : Widget
+{
+    function TreeItem(string label)
+    {
+        var func = dlfunc(getlib(), "gtk_tree_item_new_with_label", "pp");
+        var p = str_to_cstring(label);
+        self.__gtkset(func(p));
+        str_free_cstring(p);
+    }
+    function set_subtree(tree)
+    {
+        var func = dlfunc(getlib(), "gtk_tree_item_set_subtree", "vpp");
+        func(self.gtkw, tree.gtkw);
+    }
+}
+
+class Tree : Widget
+{
+    function Tree()
+    {
+        var func = dlfunc(getlib(), "gtk_tree_new", "p");
+        self.__gtkset(func(0));
+    }
+    function append(item)
+    {
+        var func = dlfunc(getlib(), "gtk_tree_append", "vpp");
+        func(self.gtkw, item.gtkw);
+    }
+}
+
+class CList : Widget
+{
+    function CList(int ncolumns)
+    {
+        var func = dlfunc(getlib(), "gtk_clist_new", "pi");
+        self.__gtkset(func(ncolumns));
+    }
+    function column_titles_show()
+    {
+        var func = dlfunc(getlib(), "gtk_clist_column_titles_show", "vp");
+        func(self.gtkw);
+    }
+    function set_column_title(int column, string title)
+    {
+        var func = dlfunc(getlib(), "gtk_clist_set_column_title", "vpip");
+        var p = str_to_cstring(title);
+        func(self.gtkw, column, p);
+        str_free_cstring(p);
+    }
+    function set_text(int row, int column, string text)
+    {
+        var func = dlfunc(getlib(), "gtk_clist_set_text", "vpiip");
+        var p;
+        if (text != null)
+            p = str_to_cstring(text);
+        func(self.gtkw, row, column, p);
+        str_free_cstring(p);
+    }
+    function append(row)
+    {
+        int n = elements(row);
+        var data = new 'ManagedStruct'([ DATATYPE_CSTR, n, 0]);
+        for (int i = 0; i < n; ++i) {
+            string r = row[i];
+            data[0,i] = r;
+        }
+        var func = dlfunc(getlib(), "gtk_clist_append", "vpp");
+        func(self.gtkw, data);
+    }
+}
+
+class Image : Widget
+{
+    function Image(string filename)
+    {
+        var func = dlfunc(getlib(), "gtk_image_new_from_file", "pp");
+        var p = str_to_cstring(filename);
+        self.__gtkset(func(p));
+        str_free_cstring(p);
+    }
+}
+
+} // namespace WinxedGtk
+
+//**********************************************************************
+
+// End

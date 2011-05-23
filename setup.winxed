@@ -1,0 +1,56 @@
+#! winxed
+# (C) 2011 Julián Albo
+
+/*
+= head1 NAME
+
+Setup for WinxedGtk
+
+=head1 DESCRIPTION
+
+Setup program for WinxedGtk using parrot distutils.
+
+=head1 USAGE
+
+Handle with care.
+
+=cut
+*/
+
+$load 'Getopt/Obj.pbc';
+$load 'distutils.pbc';
+
+//**********************************************************************
+
+function main(argv)
+{
+    string progname = argv.shift();
+
+    var data =
+{
+    "name"             : "WinxedGtk",
+    "version"          : "0.0.0",
+
+    "abstract"         : "Gtk module",
+    "description"      : "Parrot Gtk bindings via Native Call Interface",
+    "keywords" : [
+        "Gtk", "winxed"
+    ],
+
+    "copyright_holder" : "Julián Albo",
+    "license_type"     : "Artistic License 2.0",
+    "license_uri"      : "http://www.perlfoundation.org/artistic_license_2_0",
+
+    "pir_winxed" : {
+        "pir/WinxedGtk.pir" : "src/WinxedGtk.winxed"
+    },
+    "pbc_pir" : {
+        "build/WinxedGtk.pbc" : "pir/WinxedGtk.pir"
+    },
+    "inst_lib" : "build/WinxedGtk.pbc"
+};
+
+    setup(argv:[flat], data:[flat,named]);
+}
+
+// End
