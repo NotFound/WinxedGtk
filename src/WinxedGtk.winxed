@@ -157,7 +157,20 @@ class Label : Widget
     }
 }
 
-class Entry : Widget
+class Editable : Widget {
+    function get_chars(int start_pos, int end_pos)
+    {
+        var func = dlfunc(getlib(), "gtk_editable_get_chars", "ppii");
+        var p = func(self.gtkw, start_pos, end_pos);
+        string r;
+        if (p != null)
+            r = string_from_nci(p);
+        //TODO: free the GtkEditable allocated string
+        return r;
+    }
+}
+
+class Entry : Editable
 {
     function Entry()
     {
@@ -174,6 +187,27 @@ class Entry : Widget
             if (DEBUG) cry("Entry.get_text - got '", result, "'");
         }
         return result;
+    }
+}
+
+class Text : Editable
+{
+    function Text()
+    {
+        var func = dlfunc(getlib(), "gtk_text_new", "ppp");
+        self.__gtkset(func(null, null));
+    }
+    function set_editable(int editable)
+    {
+        var func = dlfunc(getlib(), "gtk_text_set_editable", "vpi");
+        func(self.gtkw, editable);
+    }
+    function insert(string text)
+    {
+        var func = dlfunc(getlib(), "gtk_text_insert", "vpppppi");
+        var p = str_to_cstring(text);
+        func(self.gtkw, null, null, null, p, -1);
+        str_free_cstring(p);
     }
 }
 
@@ -232,12 +266,12 @@ class ScrolledWindow : Bin
     function add_with_viewport(child)
     {
         var func = dlfunc(getlib(), "gtk_scrolled_window_add_with_viewport", "vpp");
-	func(self.gtkw, child.gtkw);
+        func(self.gtkw, child.gtkw);
     }
     function set_policy(int hpolicy, int vpolicy)
     {
         var func = dlfunc(getlib(), "gtk_scrolled_window_set_policy", "vpii");
-	func(self.gtkw, hpolicy, vpolicy);
+        func(self.gtkw, hpolicy, vpolicy);
     }
 }
 
