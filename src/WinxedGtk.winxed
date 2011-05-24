@@ -542,6 +542,49 @@ class DrawingArea : Widget
     }
 }
 
+class MenuItem : Bin
+{
+    function MenuItem(string label)
+    {
+        var func = dlfunc(getlib(), "gtk_menu_item_new_with_label", "pp");
+        var p = str_to_cstring(label);
+        self.__gtkset(func(p));
+        str_free_cstring(p);
+    }
+    function set_submenu(submenu)
+    {
+        var func = dlfunc(getlib(), "gtk_menu_item_set_submenu", "vpp");
+	func(self.gtkw, submenu.gtkw);
+    }
+}
+
+class MenuShell : Container
+{
+    function append(item)
+    {
+        var func = dlfunc(getlib(), "gtk_menu_shell_append", "vpp");
+	func(self.gtkw, item.gtkw);
+    }
+}
+
+class MenuBar : MenuShell
+{
+    function MenuBar()
+    {
+        var func = dlfunc(getlib(), "gtk_menu_bar_new", "p");
+        self.__gtkset(func());
+    }
+}
+
+class Menu : MenuShell
+{
+    function Menu()
+    {
+        var func = dlfunc(getlib(), "gtk_menu_new", "p");
+        self.__gtkset(func());
+    }
+}
+
 } // namespace WinxedGtk
 
 //**********************************************************************

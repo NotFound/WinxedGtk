@@ -18,6 +18,9 @@ class Image;
 class DrawingArea;
 class Tree;
 class TreeItem;
+class MenuItem;
+class MenuBar;
+class Menu;
 
 }
 
@@ -35,17 +38,47 @@ class SimpleTestWindow : Window
     function SimpleTestWindow()
     {
         self.Window(0);
-        self.set_border_width(20);
+        self.set_border_width(0);
         self.set_title('WinxedGtk simple test');
-        self.signal_connect('destroy',
+        self.signal_connect('destroy', function () { self.exit(); } );
+
+        var mainbox = new VBox(0, 0);
+        var vbox = new VBox(0, 4);
+        vbox.set_border_width(10);
+
+        var itemexit = new MenuItem('exit');
+        itemexit.show();
+        itemexit.signal_connect('activate', function () { self.exit(); } );
+        var menufile = new Menu();
+        menufile.show();
+        menufile.append(itemexit);
+        var itemfile = new MenuItem('File');
+        itemfile.show();
+        itemfile.set_submenu(menufile);
+
+        var submenuitem = new MenuItem('subtest');
+        var submenu = new Menu();
+        submenu.append(submenuitem);
+        var item = new MenuItem('test');
+        var menu = new MenuBar();
+        menu.append(itemfile);
+        menu.append(item);
+        item.set_submenu(submenu);
+        mainbox.pack_start(menu, false, false, 0);
+        mainbox.add(vbox);
+        mainbox.show();
+        self.add(mainbox);
+
+        submenuitem.show();
+        item.show();
+        submenu.show();
+        menu.show();
+        submenuitem.signal_connect('activate',
             function ()
             {
-                using WinxedGtk.gtk_main_quit;
-                gtk_main_quit();
+                say('submenu item activated');
             }
         );
-        var vbox = new VBox(0, 4);
-
 
         var image = new Image('parrot_small.png');
         image.show();
@@ -132,9 +165,15 @@ class SimpleTestWindow : Window
 
         vbox.pack_start(hbox, 0, 0, 0);
 
-        self.add(vbox);
+        //self.add(vbox);
         hbox.show();
         vbox.show();
+
+    }
+    function exit()
+    {
+        using WinxedGtk.gtk_main_quit;
+        gtk_main_quit();
     }
 }
 
