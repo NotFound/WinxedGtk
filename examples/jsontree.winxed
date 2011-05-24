@@ -19,6 +19,9 @@ class Entry;
 class Image;
 class Tree;
 class TreeItem;
+class MenuBar;
+class MenuItem;
+class Menu;
 
 }
 
@@ -32,8 +35,8 @@ class JsonTreeWindow : Window
     function JsonTreeWindow(string filename, data)
     {
         self.Window(0);
-        self.set_border_width(8);
         self.set_title('WinxedGtk tree view test');
+        self.set_border_width(0);
         self.signal_connect('destroy',
             function ()
             {
@@ -41,7 +44,25 @@ class JsonTreeWindow : Window
                 gtk_main_quit();
             }
         );
+        var mainbox = new VBox(0, 0);
+        mainbox.show();
+        var itemquit = new MenuItem('quit');
+        itemquit.signal_connect('activate',
+            function () { self.destroy(); } );
+        itemquit.show();
+        var menubar = new MenuBar();
+        menubar.show();
+        var itemfile = new MenuItem('File');
+        itemfile.show();
+        var menufile = new Menu();
+        menufile.append(itemquit);
+        menufile.show();
+        itemfile.set_submenu(menufile);
+        menubar.append(itemfile);
+        mainbox.pack_start(menubar, false, false, 0);
+
         var vbox = new VBox(0, 4);
+        vbox.set_border_width(8);
         var label = new Label('JSON tree view');
         var label2 = new Label(filename);
 
@@ -58,18 +79,13 @@ class JsonTreeWindow : Window
 
         var buttonclose = new Button('close');
         buttonclose.signal_connect('clicked',
-            function ()
-            {
-                self.destroy();
-            }
-        );
+            function () { self.destroy(); } );
         buttonclose.show();
         hbox.pack_start(buttonclose, 0, 0, 0);
 
         vbox.pack_start(image, 0, 0, 4);
         vbox.pack_start(label, 0, 0, 10);
 
-        //vbox.add(tree);
         var scrolled = new ScrolledWindow();
         scrolled.add_with_viewport(tree);
         scrolled.set_policy(1, 1);
@@ -79,7 +95,8 @@ class JsonTreeWindow : Window
         vbox.pack_start(label2, 0, 0, 6);
         vbox.pack_start(hbox, 0, 0, 6);
 
-        self.add(vbox);
+        mainbox.add(vbox);
+        self.add(mainbox);
         hbox.show();
         vbox.show();
     }
