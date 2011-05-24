@@ -123,9 +123,26 @@ function add_object(tree, object)
 function read_data(string filename, string startmark, string endmark)
 {
     var json = load_language('data_json');
-    var file = open(filename);
-    file.encoding('utf8');
-    var text = file.readall();
+    var text;
+    if (substr(filename, 0, 7) == "http://") {
+        using extern LWP.UserAgent;
+        var ua = new ['LWP', 'UserAgent'];
+        var nargs = {
+            'Connection' : 'close'
+        };
+        var resp = ua.get(filename, nargs:[named,flat]);
+        int code = resp.code;
+        if (code != 200)
+            throw "Failed to load from url: " + string(code);
+        text = resp.content();
+    }
+    else {
+        var file = open(filename);
+        file.encoding('utf8');
+        text = file.readall();
+        file.close();
+    }
+
     if (startmark != null) {
         string mark = "\n" + startmark + "\n";
         int pos = indexof(text, mark);
@@ -146,7 +163,6 @@ function read_data(string filename, string startmark, string endmark)
         }
     }
 
-    file.close();
     var code = json.compile(text);
     var data = code();
     return data;
