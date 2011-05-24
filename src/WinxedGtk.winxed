@@ -141,6 +141,20 @@ function gtk_main_quit()
     }
 }
 
+function gtk_check_version(int major, int minor, int micro)
+{
+    var func = dlfunc(getlib(), "gtk_check_version", "piii");
+    if (func == null || ! func)
+        return "Cannot check gtk version";
+    else {
+        var p = func(major, minor, micro);
+        string result;
+        if (p != null)
+            result = string_from_nci(p);
+        return result;
+    }
+}
+
 //**********************************************************************
 
 class GObject
@@ -163,6 +177,11 @@ class Widget : GObject
     {
         var func = dlfunc(getlib(), "gtk_widget_show", "vp");
         func(self.gtkw);
+    }
+    function set_size_request(int width, int height)
+    {
+        var func = dlfunc(getlib(), "gtk_widget_set_size_request", "vpii");
+        func(self.gtkw, width, height);
     }
     function signal_connect(string signal_name, callback,
             data[optional], int has_data[opt_flag])
@@ -499,6 +518,27 @@ class Image : Widget
         var p = str_to_cstring(filename);
         self.__gtkset(func(p));
         str_free_cstring(p);
+    }
+}
+
+class DrawingArea : Widget
+{
+    function DrawingArea()
+    {
+        var func = dlfunc(getlib(), "gtk_drawing_area_new", "p");
+        self.__gtkset(func());
+    }
+    function draw_rectangle(int x, int y, int width, int height)
+    {
+        string r = gtk_check_version(2, 14, 0);
+        if (r != null)
+            throw "Can't draw with this gtk: " + r;
+        var func = dlfunc(getlib(), "gtk_widget_get_window", "pp");
+        var gdkwindow = func(self.gtkw);
+        func = dlfunc(getlib(), "gtk_widget_get_style", "pp");
+        var style = func(self.gtkw);
+        func = dlfunc(getlib(), "gtk_draw_box", "vppiiiiii");
+        func(style, gdkwindow, 0, 0, x, y, width, height);
     }
 }
 

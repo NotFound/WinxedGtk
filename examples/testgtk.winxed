@@ -15,6 +15,7 @@ class Button;
 class Entry;
 class TextView;
 class Image;
+class DrawingArea;
 class Tree;
 class TreeItem;
 
@@ -71,6 +72,24 @@ class SimpleTestWindow : Window
         text.set_editable(true);
         text.show();
 
+        var drawing;
+        using WinxedGtk.gtk_check_version;
+        string check = gtk_check_version(2, 14, 0);
+        if (check != null)
+            cry("Omiting DrawingArea test: " + check);
+        else {
+            drawing = new DrawingArea();
+            drawing.set_size_request(600, 400);
+            drawing.signal_connect('expose_event',
+                function ()
+                {
+                    cry('Exposed');
+                    drawing.draw_rectangle(100, 100, 400, 100);
+                }
+            );
+            drawing.show();
+        }
+
         var button = new Button('say hello');
         button.signal_connect('clicked',
             function ()
@@ -80,10 +99,10 @@ class SimpleTestWindow : Window
                     say('hello, ', t);
                 else
                     say('hello');
-		if (text.get_char_count() > 0) {
+                if (text.get_char_count() > 0) {
                     t = text.get_text();
                     say("Here is some text:\n", t);
-		}
+                }
             }
         );
         var buttonclose = new Button('close');
@@ -106,6 +125,10 @@ class SimpleTestWindow : Window
         vbox.add(self.entry);
         vbox.add(show(new Label('A Text widget')));
         vbox.add(text);
+        if (drawing != null) {
+            vbox.add(show(new Label('A DrawingArea widget')));
+            vbox.add(drawing);
+        }
 
         vbox.pack_start(hbox, 0, 0, 0);
 
