@@ -36,23 +36,45 @@ function getlib()
         yield lib;
 }
 
+function get_parrot_func(string name, string signature)
+{
+    return dlfunc(null, name, signature);
+}
+
+function parrot_str_to_cstring()
+{
+    var func = get_parrot_func('Parrot_str_to_cstring',   'ppS');
+    for (;;)
+        yield func;
+}
+
+function parrot_str_free_cstring()
+{
+    var func = get_parrot_func('Parrot_str_free_cstring',   'vp');
+    for (;;)
+        yield func;
+}
+
+function parrot_str_from_platform_cstring()
+{
+    var func = get_parrot_func('Parrot_str_from_platform_cstring',   'Spp');
+    for (;;)
+        yield func;
+}
+
 function str_to_cstring(string s)
 {
-    var to_cstring = dlfunc(null, 'Parrot_str_to_cstring',   'ppS');
-    return to_cstring(getinterp(), s);
+    return parrot_str_to_cstring()(getinterp(), s);
 }
 
 function str_free_cstring(s)
 {
-    var free_cstring = dlfunc(null, 'Parrot_str_free_cstring', 'vp');
-    free_cstring(s);
+    parrot_str_free_cstring()(s);
 }
 
 function string_from_nci(p)
 {
-    var f = dlfunc(null, 'Parrot_str_new', 'SppI');
-    string r = f(getinterp(), p, 0);
-    return r;
+    return parrot_str_from_platform_cstring()(getinterp(), p);
 }
 
 function gtk_main_level()
@@ -66,6 +88,21 @@ function mainloop_quit()
 {
     var quit = false;
     for (;;) yield quit;
+}
+
+function __text_iter_new()
+{
+    // There is no function to allocate a new GtkTextIter,
+    // this does the trick.
+    var iter_copy = dlfunc(getlib(), "gtk_text_iter_copy", "pp");
+    var ugly = new ['ManagedStruct'](256);
+    return iter_copy(ugly);
+}
+
+function __text_iter_free(iter)
+{
+    var iter_free = dlfunc(getlib(), "gtk_text_iter_free", "vp");
+    iter_free(iter);
 }
 
 } // namespace __private
@@ -222,6 +259,42 @@ class Container : Widget
     {
         var func = dlfunc(getlib(), "gtk_container_add", "vpp");
         func(self.gtkw, item.gtkw);
+    }
+}
+
+class TextView : Container
+{
+    function TextView()
+    {
+        var func = dlfunc(getlib(), "gtk_text_view_new", "p");
+        self.__gtkset(func());
+    }
+    function set_editable(int editable)
+    {
+        var func = dlfunc(getlib(), "gtk_text_view_set_editable", "vpi");
+        func(self.gtkw, editable);
+    }
+    function __get_buffer()
+    {
+        var func = dlfunc(getlib(), "gtk_text_view_get_buffer", "pp");
+        return func(self.gtkw);
+    }
+    function get_text()
+    {
+        var buffer = self.__get_buffer();
+
+        var cloneiter = dlfunc(getlib(), "gtk_text_iter_copy", "pp");
+        var start = __text_iter_new();
+        var end = cloneiter(start);
+        var func = dlfunc(getlib(), "gtk_text_buffer_get_start_iter", "vpp");
+        func(buffer, start);
+        func = dlfunc(getlib(), "gtk_text_buffer_get_end_iter", "vpp");
+        func(buffer, end);
+        func = dlfunc(getlib(), "gtk_text_buffer_get_text", "ppppi");
+        var p = func(buffer, start, end, 0);
+        __text_iter_free(start);
+        __text_iter_free(end);
+        return string_from_nci(p);
     }
 }
 

@@ -13,7 +13,7 @@ class Window;
 class Label;
 class Button;
 class Entry;
-class Text;
+class TextView;
 class Image;
 class Tree;
 class TreeItem;
@@ -66,8 +66,8 @@ class SimpleTestWindow : Window
         subitem.show();
         item2.show();
 
-        var text = new Text();
-        text.insert('Some text...');
+        var text = new TextView();
+        //text.insert('Some text...');
         text.set_editable(true);
         text.show();
 
@@ -80,7 +80,7 @@ class SimpleTestWindow : Window
                     say('hello, ', t);
                 else
                     say('hello');
-                t = text.get_chars(0, -1);
+                t = text.get_text();
                 if (t != null && t != '')
                     say("Here is some text:\n", t);
             }
