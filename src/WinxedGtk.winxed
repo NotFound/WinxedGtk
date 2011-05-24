@@ -143,13 +143,17 @@ function gtk_main_quit()
 
 //**********************************************************************
 
-class Widget
+class GObject
 {
     var gtkw;
     function __gtkset(gtkw)
     {
         self.gtkw = gtkw;
     }
+}
+
+class Widget : GObject
+{
     function destroy()
     {
         var func = dlfunc(getlib(), "gtk_widget_destroy", "vp");
@@ -262,6 +266,49 @@ class Container : Widget
     }
 }
 
+class TextIter
+{
+    var gtkiter;
+    function TextIter()
+    {
+        self.gtkiter = __text_iter_new();
+    }
+}
+
+class TextBuffer : GObject
+{
+    function TextBuffer()
+    {
+        var func = dlfunc(getlib(), "gtk_text_buffer_new", "p");
+        self.__gtkset(func());
+    }
+    function get_char_count()
+    {
+        var func = dlfunc(getlib(), "gtk_text_buffer_get_char_count", "ip");
+        return func(self.gtkw);
+    }
+    function get_start_iter()
+    {
+        var func = dlfunc(getlib(), "gtk_text_buffer_get_start_iter", "vpp");
+        var textiter = new TextIter();
+        func(self.gtkw, textiter.gtkiter);
+        return textiter;
+    }
+    function get_end_iter()
+    {
+        var func = dlfunc(getlib(), "gtk_text_buffer_get_end_iter", "vpp");
+        var textiter = new TextIter();
+        func(self.gtkw, textiter.gtkiter);
+        return textiter;
+    }
+    function get_text(start, end, int include_hidden_chars)
+    {
+        var func = dlfunc(getlib(), "gtk_text_buffer_get_text", "ppppi");
+        var p = func(self.gtkw, start.gtkiter, end.gtkiter, include_hidden_chars);
+        return string_from_nci(p);
+    }
+}
+
 class TextView : Container
 {
     function TextView()
@@ -279,22 +326,20 @@ class TextView : Container
         var func = dlfunc(getlib(), "gtk_text_view_get_buffer", "pp");
         return func(self.gtkw);
     }
+    function get_buffer()
+    {
+        var textbuffer = new TextBuffer; // Don't call the constructor
+        textbuffer.__gtkset(self.__get_buffer());
+        return textbuffer;
+    }
+    function get_char_count()
+    {
+        return self.get_buffer().get_char_count();
+    }
     function get_text()
     {
-        var buffer = self.__get_buffer();
-
-        var cloneiter = dlfunc(getlib(), "gtk_text_iter_copy", "pp");
-        var start = __text_iter_new();
-        var end = cloneiter(start);
-        var func = dlfunc(getlib(), "gtk_text_buffer_get_start_iter", "vpp");
-        func(buffer, start);
-        func = dlfunc(getlib(), "gtk_text_buffer_get_end_iter", "vpp");
-        func(buffer, end);
-        func = dlfunc(getlib(), "gtk_text_buffer_get_text", "ppppi");
-        var p = func(buffer, start, end, 0);
-        __text_iter_free(start);
-        __text_iter_free(end);
-        return string_from_nci(p);
+       var buffer = self.get_buffer();
+       return buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter(), 0);
     }
 }
 
