@@ -1,5 +1,7 @@
 WinxedGtk - A Gtk module for parrot via NCI.
 
-(C) 2011 Julián albo "NotFound"
+(C) 2011 Julián Albo "NotFound"
 
 Early bird version, use with care.
+
+Use make before setup.winxed.
