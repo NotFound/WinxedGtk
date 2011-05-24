@@ -24,6 +24,9 @@ class TreeItem;
 
 using namespace WinxedGtk;
 
+// Set to 1 to compile a debug version.
+const int DEBUG = 0;
+
 class JsonTreeWindow : Window
 {
     function JsonTreeWindow(string filename, data)
@@ -67,11 +70,11 @@ class JsonTreeWindow : Window
         vbox.pack_start(label, 0, 0, 10);
 
         //vbox.add(tree);
-	var scrolled = new ScrolledWindow();
-	scrolled.add_with_viewport(tree);
-	scrolled.set_policy(1, 1);
-	vbox.pack_start(scrolled, true, true, 0);
-	scrolled.show();
+        var scrolled = new ScrolledWindow();
+        scrolled.add_with_viewport(tree);
+        scrolled.set_policy(1, 1);
+        vbox.pack_start(scrolled, true, true, 0);
+        scrolled.show();
 
         vbox.pack_start(label2, 0, 0, 6);
         vbox.pack_start(hbox, 0, 0, 6);
@@ -117,12 +120,34 @@ function add_object(tree, object)
     }
 }
 
-function read_data(string filename)
+function read_data(string filename, string startmark, string endmark)
 {
     var json = load_language('data_json');
     var file = open(filename);
     file.encoding('utf8');
-    var code = json.compile(file.readall());
+    var text = file.readall();
+    if (startmark != null) {
+        string mark = "\n" + startmark + "\n";
+        int pos = indexof(text, mark);
+        if (pos >= 0) {
+            int cutinitpos = pos + length(mark);
+            if (endmark == null)
+                text = substr(text, cutinitpos);
+            else {
+                mark = "\n" + endmark + "\n";
+                int cutlength;
+                pos = indexof(text, mark, cutinitpos);
+                if (pos >= 0)
+                    text = substr(text, cutinitpos, pos - cutinitpos + 1);
+                else
+                    text = substr(text, cutinitpos);
+            }
+            if (DEBUG) cry('Filtered: "', text, '"');
+        }
+    }
+
+    file.close();
+    var code = json.compile(text);
     var data = code();
     return data;
 }
@@ -132,18 +157,24 @@ function main(args)
     using WinxedGtk.init;
     using WinxedGtk.gtk_main;
 
-    say('Initializing');
+    if (DEBUG) cry('Initializing Gtk');
     init(args);
 
-    string filename = args[1];
-    var data = read_data(filename);
+    // Simplified way of getting command line args
+    args.shift();
+    :(string filename, string markbegin[optional], string markend[optional]) =
+        function (a) { return a:[flat]; } (args);
+
+    if (DEBUG) cry('Loading JSON');
+    var data = read_data(filename, markbegin, markend);
 
     var window = new JsonTreeWindow(filename, data);
+
+    if (DEBUG) cry('Running main loop');
     window.show();
-    say('Running');
     gtk_main();
 
-    say('End');
+    if (DEBUG) cry('End');
 }
 
 // End

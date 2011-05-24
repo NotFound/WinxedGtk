@@ -27,6 +27,7 @@ function main(argv)
     string progname = argv.shift();
 
     var data =
+//BEGIN_JSON_SETUP
 {
     "name"             : "WinxedGtk",
     "version"          : "0.0.0",
@@ -48,7 +49,9 @@ function main(argv)
         "build/WinxedGtk.pbc" : "pir/WinxedGtk.pir"
     },
     "inst_lib" : "build/WinxedGtk.pbc"
-};
+}
+//END_JSON_SETUP
+    ;
 
     setup(argv:[flat], data:[flat,named]);
 }
