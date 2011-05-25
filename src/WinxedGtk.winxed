@@ -105,6 +105,80 @@ function __text_iter_free(iter)
     iter_free(iter);
 }
 
+function __check_version()
+{
+    var retfunc;
+    var func = dlfunc(getlib(), "gtk_check_version", "piii");
+    if (func == null)
+        retfunc = function (int major, int minor, int micro)
+        {
+            return "Cannot check gtk version";
+        };
+    else retfunc = function (int major, int minor, int micro)
+        {
+            var p = func(major, minor, micro);
+            string result;
+            if (p != null)
+                result = string_from_nci(p);
+            return result;
+        };
+    for (;;) yield retfunc;
+}
+
+function __widget_get_window()
+{
+    var retfunc;
+    var func = dlfunc(getlib(), "gtk_widget_get_window", "pp");
+    if (func != null)
+        retfunc = function (gtkw)
+        {
+            var gdkwindow = func(gtkw);
+            return gdkwindow;
+        };
+    else
+        retfunc = function (gtkw)
+        {
+            // The function gtk_widget_get_window is not available
+            // until Gtk+ 2.14
+            // This is a veeeery convoluted way to get
+            // the window property from the widget.
+            var interp = getinterp();
+            var pointee = new['ManagedStruct']([DATATYPE_INT, 0, 0]);
+            var pointer = new ['Pointer'];
+            var get = get_parrot_func("Parrot_PMC_get_pointer", "ipP");
+            var set = get_parrot_func("Parrot_PMC_set_pointer", "vpPi");
+            if (get == null || set == null) throw "Vaya";
+            int pval = get(interp, pointee);
+            set(interp, pointer, pval);
+            var func = dlfunc(getlib(), "g_object_get", "vpppp");
+            var p = str_to_cstring('window');
+            func(gtkw, p, pointer, null);
+            int n = pointee[0];
+            var result = new ['UnManagedStruct'];
+            set(interp, result, n);
+            return result;
+        };
+    for (;;) yield retfunc;
+}
+
+function __widget_get_style()
+{
+    var retfunc;
+    var func = dlfunc(getlib(), "gtk_widget_get_style", "pp");
+    if (func != null)
+        retfunc = function (gtkw)
+        {
+            var gdkstyke = func(gtkw);
+            return gdkstyke;
+        };
+    else
+        retfunc = function (gtkw)
+        {
+            throw "Can't draw with this gtk";
+        };
+    for (;;) yield retfunc;
+}
+
 } // namespace __private
 
 //**********************************************************************
@@ -143,16 +217,7 @@ function gtk_main_quit()
 
 function gtk_check_version(int major, int minor, int micro)
 {
-    var func = dlfunc(getlib(), "gtk_check_version", "piii");
-    if (func == null || ! func)
-        return "Cannot check gtk version";
-    else {
-        var p = func(major, minor, micro);
-        string result;
-        if (p != null)
-            result = string_from_nci(p);
-        return result;
-    }
+    return __check_version()(major, minor, micro);
 }
 
 //**********************************************************************
@@ -530,14 +595,9 @@ class DrawingArea : Widget
     }
     function draw_rectangle(int x, int y, int width, int height)
     {
-        string r = gtk_check_version(2, 14, 0);
-        if (r != null)
-            throw "Can't draw with this gtk: " + r;
-        var func = dlfunc(getlib(), "gtk_widget_get_window", "pp");
-        var gdkwindow = func(self.gtkw);
-        func = dlfunc(getlib(), "gtk_widget_get_style", "pp");
-        var style = func(self.gtkw);
-        func = dlfunc(getlib(), "gtk_draw_box", "vppiiiiii");
+        var gdkwindow = __widget_get_window()(self.gtkw);
+        var style = __widget_get_style()(self.gtkw);
+        var func = dlfunc(getlib(), "gtk_draw_box", "vppiiiiii");
         func(style, gdkwindow, 0, 0, x, y, width, height);
     }
 }
@@ -554,7 +614,7 @@ class MenuItem : Bin
     function set_submenu(submenu)
     {
         var func = dlfunc(getlib(), "gtk_menu_item_set_submenu", "vpp");
-	func(self.gtkw, submenu.gtkw);
+        func(self.gtkw, submenu.gtkw);
     }
 }
 
@@ -563,7 +623,7 @@ class MenuShell : Container
     function append(item)
     {
         var func = dlfunc(getlib(), "gtk_menu_shell_append", "vpp");
-	func(self.gtkw, item.gtkw);
+        func(self.gtkw, item.gtkw);
     }
 }
 
