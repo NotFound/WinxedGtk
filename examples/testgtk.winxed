@@ -150,11 +150,14 @@ class SimpleTestWindow : Window
         hbox.pack_start(button, 0, 0, 0);
         hbox.pack_start(buttonclose, 0, 0, 0);
 
+        var label;
         vbox.add(show(new Label('This is a simple Window example')));
         vbox.add(image);
-        vbox.add(show(new Label('A Tree widget')));
+        vbox.add((label =show(new Label('A Tree widget'))));
+	label.set_alignment(0.0, 0.5);
         vbox.add(tree);
-        vbox.add(show(new Label('A Entry widget')));
+        vbox.add((label = show(new Label('A Entry widget'))));
+	label.set_alignment(1.0, 0.5);
         vbox.add(self.entry);
         vbox.add(show(new Label('A Text widget')));
         vbox.add(text);

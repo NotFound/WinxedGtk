@@ -271,7 +271,21 @@ class Widget : GObject
     }
 }
 
-class Label : Widget
+class Misc : Widget
+{
+    function set_alignment(float xalign, float yalign)
+    {
+        var func = dlfunc(getlib(), "gtk_misc_set_alignment", "vpff");
+        func(self.gtkw, xalign, yalign);
+    }
+    function set_padding(float xpad, float ypad)
+    {
+        var func = dlfunc(getlib(), "gtk_misc_set_padding", "vpff");
+        func(self.gtkw, xpad, ypad);
+    }
+}
+
+class Label : Misc
 {
     function Label(string text)
     {
@@ -575,7 +589,7 @@ class CList : Widget
     }
 }
 
-class Image : Widget
+class Image : Misc
 {
     function Image(string filename)
     {
