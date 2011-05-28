@@ -151,7 +151,11 @@ function read_data(string filename, string startmark, string endmark)
         int code = resp.code;
         if (code != 200)
             throw "Failed to load from url: " + string(code);
-        text = resp.content();
+        // LWP currently does not provide a way to automatically apply
+        // the encoding, thus do it here.
+        var b = new ['ByteBuffer'];
+        b =: string(resp.content);
+        text = b.get_string('utf8');
     }
     else {
         var file = open(filename);
