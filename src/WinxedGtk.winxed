@@ -251,7 +251,7 @@ class Widget : GObject
     function signal_connect(string signal_name, callback,
             data[optional], int has_data[opt_flag])
     {
-        var func = dlfunc(getlib(), "gtk_signal_connect_full", "ippppPpii");
+        var func = dlfunc(getlib(), "gtk_signal_connect_full", "lppppPpii");
         var callback_function = has_data ?
             function(widget, actualdata)
             {
@@ -268,6 +268,12 @@ class Widget : GObject
         if (DEBUG) cry("connecting signal '", signal_name, "'");
         int r = func(self.gtkw, signame, funback, null, cb_data, null, 1, 1);
         str_free_cstring(signame);
+        return r;
+    }
+    function signal_disconnect(handler_id)
+    {
+        var func = dlfunc(getlib(), "g_signal_handler_disconnect", "vpl");
+        func(self.gtkw, handler_id);
     }
 }
 
@@ -504,6 +510,29 @@ class Window : Bin
         var ptitle = str_to_cstring(title);
         func(self.gtkw, ptitle);
         str_free_cstring(ptitle);
+    }
+}
+
+class Dialog : Window
+{
+    function run()
+    {
+        var func = dlfunc(getlib(), "gtk_dialog_run", "ip");
+        int r = func(self.gtkw);
+        return r;
+    }
+}
+
+class MessageDialog : Dialog
+{
+    function MessageDialog(parent, int flags, int type, int buttons, string message)
+    {
+        var func = dlfunc(getlib(), "gtk_message_dialog_new", "ppiiipp");
+        var format = str_to_cstring("%s");
+        var p = str_to_cstring(message);
+        self.__gtkset(func(parent.gtkw, flags, type, buttons, format, p));
+        str_free_cstring(format);
+        str_free_cstring(p);
     }
 }
 
