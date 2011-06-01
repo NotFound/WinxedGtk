@@ -411,6 +411,15 @@ class TextBuffer : GObject
         var p = func(self.gtkw, start.gtkiter, end.gtkiter, include_hidden_chars);
         return string_from_nci(p);
     }
+    function set_text(string text)
+    {
+        //TODO reencode text if not already utf8
+        var func = dlfunc(getlib(), "gtk_text_buffer_set_text", "vppi");
+        int len = bytelength(text);
+        var p = str_to_cstring(text);
+        func(self.gtkw, p, len);
+        str_free_cstring(p);
+    }
 }
 
 class TextView : Container
