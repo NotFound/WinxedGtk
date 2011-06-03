@@ -21,7 +21,8 @@ function getlib()
             'libgtk-x11',
             'libgtk-x11-2.0',
             'libgtk-x11-2.0.so',
-            '/usr/lib/libgtk-x11-2.0.so'
+            '/usr/lib/libgtk-x11-2.0.so',
+            '/usr/lib/libgtk-x11-2.0.so.0'
             ] ) {
         lib = loadlib(libname);
         if (lib) {
