@@ -78,6 +78,16 @@ function string_from_nci(p)
     return parrot_str_from_platform_cstring()(getinterp(), p);
 }
 
+function __get_g_free()
+{
+    return dlfunc(getlib(), "g_free", "vp");
+}
+
+function g_free(p)
+{
+    __get_g_free()(p);
+}
+
 function gtk_main_level()
 {
     var func = dlfunc(getlib(), "gtk_main_level", "i");
@@ -309,9 +319,10 @@ class Editable : Widget {
         var func = dlfunc(getlib(), "gtk_editable_get_chars", "ppii");
         var p = func(self.gtkw, start_pos, end_pos);
         string r;
-        if (p != null)
+        if (p != null) {
             r = string_from_nci(p);
-        //TODO: free the GtkEditable allocated string
+            g_free(p);
+        }
         return r;
     }
 }
@@ -410,7 +421,12 @@ class TextBuffer : GObject
     {
         var func = dlfunc(getlib(), "gtk_text_buffer_get_text", "ppppi");
         var p = func(self.gtkw, start.gtkiter, end.gtkiter, include_hidden_chars);
-        return string_from_nci(p);
+        string result;
+        if (p != null) {
+            result = string_from_nci(p);
+            g_free(p);
+        }
+        return result;
     }
     function set_text(string text)
     {
