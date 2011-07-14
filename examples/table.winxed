@@ -3,21 +3,10 @@
 $load 'WinxedGtk.pbc';
 $load 'Mysql.pbc';
 
+$include 'WinxedGtk.winxhead';
+
 //**********************************************************************
 
-namespace WinxedGtk
-{
-
-class VBox;
-class HBox;
-class Window;
-class Label;
-class Button;
-class Entry;
-class Image;
-class CList;
-
-}
 
 using namespace WinxedGtk;
 

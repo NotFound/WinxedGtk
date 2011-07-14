@@ -4,25 +4,7 @@ $load 'WinxedGtk.pbc';
 
 //**********************************************************************
 
-namespace WinxedGtk
-{
-
-class VBox;
-class HBox;
-class Window;
-class Label;
-class Button;
-class Entry;
-class TextView;
-class Image;
-class DrawingArea;
-class Tree;
-class TreeItem;
-class MenuItem;
-class MenuBar;
-class Menu;
-
-}
+$include 'WinxedGtk.winxhead';
 
 using namespace WinxedGtk;
 

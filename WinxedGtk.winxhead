@@ -1,0 +1,25 @@
+// Include file for WinxedGtk module
+
+namespace WinxedGtk
+{
+
+class VBox;
+class HBox;
+class ScrolledWindow;
+class Window;
+class Label;
+class Button;
+class Entry;
+class TextView;
+class DrawingArea;
+class Image;
+class Tree;
+class TreeItem;
+class MenuBar;
+class MenuItem;
+class Menu;
+class CList;
+
+}
+
+// End

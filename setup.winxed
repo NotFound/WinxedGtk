@@ -48,6 +48,7 @@ function main(argv)
     "pbc_pir" : {
         "build/WinxedGtk.pbc" : "pir/WinxedGtk.pir"
     },
+    "inst_inc" : "WinxedGtk.winxhead",
     "inst_lib" : "build/WinxedGtk.pbc"
 }
 //END_JSON_SETUP
