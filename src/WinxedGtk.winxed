@@ -42,40 +42,22 @@ function get_parrot_func(string name, string signature)
     return dlfunc(null, name, signature);
 }
 
-function parrot_str_to_cstring()
-{
-    var func = get_parrot_func('Parrot_str_to_cstring',   'ppS');
-    for (;;)
-        yield func;
-}
-
-function parrot_str_free_cstring()
-{
-    var func = get_parrot_func('Parrot_str_free_cstring',   'vp');
-    for (;;)
-        yield func;
-}
-
-function parrot_str_from_platform_cstring()
-{
-    var func = get_parrot_func('Parrot_str_from_platform_cstring',   'Spp');
-    for (;;)
-        yield func;
-}
-
 function str_to_cstring(string s)
 {
-    return parrot_str_to_cstring()(getinterp(), s);
-}
-
-function str_free_cstring(s)
-{
-    parrot_str_free_cstring()(s);
+    var cstring = new ['ByteBuffer'];
+    if (s != null) {
+        string enc = encoding_name(s);
+        if (enc != 'ascii' && enc != 'utf8')
+            s = trans_encoding(s, 'utf8');
+        cstring =: s;
+        push(cstring, 0);
+    }
+    return cstring;
 }
 
 function string_from_nci(p)
 {
-    return parrot_str_from_platform_cstring()(getinterp(), p);
+    return p.to_string('utf8');
 }
 
 function __get_g_free()
@@ -278,7 +260,6 @@ class Widget : GObject
         var signame = str_to_cstring(signal_name);
         if (DEBUG) cry("connecting signal '", signal_name, "'");
         int r = func(self.gtkw, signame, funback, null, cb_data, null, 1, 1);
-        str_free_cstring(signame);
         return r;
     }
     function signal_disconnect(handler_id)
@@ -309,7 +290,6 @@ class Label : Misc
         var func = dlfunc(getlib(), "gtk_label_new", "pp");
         var p = str_to_cstring(text);
         self.__gtkset(func(p));
-        str_free_cstring(p);
     }
 }
 
@@ -364,7 +344,6 @@ class Text : Editable
         var func = dlfunc(getlib(), "gtk_text_insert", "vpppppi");
         var p = str_to_cstring(text);
         func(self.gtkw, null, null, null, p, -1);
-        str_free_cstring(p);
     }
 }
 
@@ -435,7 +414,6 @@ class TextBuffer : GObject
         int len = bytelength(text);
         var p = str_to_cstring(text);
         func(self.gtkw, p, len);
-        str_free_cstring(p);
     }
 }
 
@@ -535,7 +513,6 @@ class Window : Bin
         var func = dlfunc(getlib(), "gtk_window_set_title", "vpp");
         var ptitle = str_to_cstring(title);
         func(self.gtkw, ptitle);
-        str_free_cstring(ptitle);
     }
 }
 
@@ -557,8 +534,6 @@ class MessageDialog : Dialog
         var format = str_to_cstring("%s");
         var p = str_to_cstring(message);
         self.__gtkset(func(parent.gtkw, flags, type, buttons, format, p));
-        str_free_cstring(format);
-        str_free_cstring(p);
     }
 }
 
@@ -569,7 +544,6 @@ class Button : Bin
         var func = dlfunc(getlib(), "gtk_button_new_with_label", "pp");
         var p = str_to_cstring(label);
         self.__gtkset(func(p));
-        str_free_cstring(p);
     }
 }
 
@@ -580,7 +554,6 @@ class TreeItem : Widget
         var func = dlfunc(getlib(), "gtk_tree_item_new_with_label", "pp");
         var p = str_to_cstring(label);
         self.__gtkset(func(p));
-        str_free_cstring(p);
     }
     function set_subtree(tree)
     {
@@ -620,7 +593,6 @@ class CList : Widget
         var func = dlfunc(getlib(), "gtk_clist_set_column_title", "vpip");
         var p = str_to_cstring(title);
         func(self.gtkw, column, p);
-        str_free_cstring(p);
     }
     function set_text(int row, int column, string text)
     {
@@ -629,7 +601,6 @@ class CList : Widget
         if (text != null)
             p = str_to_cstring(text);
         func(self.gtkw, row, column, p);
-        str_free_cstring(p);
     }
     function append(row)
     {
@@ -651,7 +622,6 @@ class Image : Misc
         var func = dlfunc(getlib(), "gtk_image_new_from_file", "pp");
         var p = str_to_cstring(filename);
         self.__gtkset(func(p));
-        str_free_cstring(p);
     }
 }
 
@@ -678,7 +648,6 @@ class MenuItem : Bin
         var func = dlfunc(getlib(), "gtk_menu_item_new_with_label", "pp");
         var p = str_to_cstring(label);
         self.__gtkset(func(p));
-        str_free_cstring(p);
     }
     function set_submenu(submenu)
     {
