@@ -182,6 +182,10 @@ function main(args)
 
     // Simplified way of getting command line args
     args.shift();
+    if (elements(args) < 1) {
+        cry("No file");
+        exit(1);
+    }
     :(string filename, string markbegin[optional], string markend[optional]) =
         function (a) { return a:[flat]; } (args);
 
