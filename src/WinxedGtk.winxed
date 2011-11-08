@@ -57,7 +57,7 @@ function str_to_cstring(string s)
 
 function string_from_nci(p)
 {
-    return p.to_string('utf8');
+    return p.as_string('utf8');
 }
 
 function __get_g_free()
