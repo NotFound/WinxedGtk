@@ -13,6 +13,31 @@ namespace __private
 
 $include_const 'datatypes.pasm';
 
+function get_parrot_func(string name, string signature)
+{
+    return dlfunc(null, name, signature);
+}
+
+function str_to_cstring(string s)
+{
+    var cstring = new ['ByteBuffer'];
+    if (s != null) {
+        string enc = encoding_name(s);
+        if (enc != 'ascii' && enc != 'utf8')
+            s = trans_encoding(s, 'utf8');
+        cstring =: s;
+        push(cstring, 0);
+    }
+    return cstring;
+}
+
+function string_from_nci(p)
+{
+    return p.as_string('utf8');
+}
+
+//**********************************************************************
+
 namespace internal
 {
 
@@ -50,44 +75,48 @@ function getlib()
     return lib;
 }
 
-function get_parrot_func(string name, string signature)
+function getsignatures()
 {
-    return dlfunc(null, name, signature);
+    return {
+        "g_free" : "vp",
+        "g_object_get" : "vpppp",
+        "gtk_init" : "ipp",
+        "gtk_main_level" : "i",
+        "gtk_main_iteration" : "i",
+        "gtk_main_quit" : "v",
+        "gtk_widget_show" : "vp",
+        "gtk_widget_set_size_request" : "vpii",
+        "gtk_widget_get_style" : "pp",
+        "gtk_widget_get_window" : "pp",
+        "gtk_widget_destroy" : "vp"
+    };
 }
 
-function str_to_cstring(string s)
+function gtkfunc(string name)
 {
-    var cstring = new ['ByteBuffer'];
-    if (s != null) {
-        string enc = encoding_name(s);
-        if (enc != 'ascii' && enc != 'utf8')
-            s = trans_encoding(s, 'utf8');
-        cstring =: s;
-        push(cstring, 0);
+    var ns = namespace internal;
+    var func = ns[name];
+    if (func == null) {
+        var sigs = ns["signatures"];
+        if (sigs == null)
+            ns["signatures"] = sigs = getsignatures();
+        if (! exists sigs[name])
+            throw "signature for " + name + " not available";
+        func = dlfunc(getlib(), name, sigs[name]);
     }
-    return cstring;
+    return func;
 }
 
-function string_from_nci(p)
-{
-    return p.as_string('utf8');
-}
-
-function __get_g_free()
-{
-    return dlfunc(getlib(), "g_free", "vp");
-}
+//**********************************************************************
 
 function g_free(p)
 {
-    __get_g_free()(p);
+    gtkfunc("g_free")(p);
 }
 
 function gtk_main_level()
 {
-    var func = dlfunc(getlib(), "gtk_main_level", "i");
-    int i = func();
-    return i;
+    return int(gtkfunc("gtk_main_level")());
 }
 
 function mainloop_quit()
@@ -137,7 +166,7 @@ function __check_version()
 function __widget_get_window()
 {
     var retfunc;
-    var func = dlfunc(getlib(), "gtk_widget_get_window", "pp");
+    var func = gtkfunc("gtk_widget_get_window");
     if (func != null)
         retfunc = function (gtkw)
         {
@@ -159,7 +188,7 @@ function __widget_get_window()
             if (get == null || set == null) throw "Vaya";
             int pval = get(interp, pointee);
             set(interp, pointer, pval);
-            var func = dlfunc(getlib(), "g_object_get", "vpppp");
+            var func = gtkfunc("g_object_get");
             var p = str_to_cstring('window');
             func(gtkw, p, pointer, null);
             int n = pointee[0];
@@ -173,7 +202,7 @@ function __widget_get_window()
 function __widget_get_style()
 {
     var retfunc;
-    var func = dlfunc(getlib(), "gtk_widget_get_style", "pp");
+    var func = gtkfunc("gtk_widget_get_style");
     if (func != null)
         retfunc = function (gtkw)
         {
@@ -201,13 +230,13 @@ function init(args)
     for (int i = 0; i < argc; ++i)
         pargs[0,i] = string(args[i]);
     var pargc = new 'ManagedStruct'([ DATATYPE_PTR, 0, 0]);
-    var func = dlfunc(getlib(), "gtk_init", "ipp");
+    var func = gtkfunc("gtk_init");
     func(pargc, pargs);
 }
 
 function gtk_main()
 {
-    var func = dlfunc(getlib(), "gtk_main_iteration", "i");
+    var func = gtkfunc("gtk_main_iteration");
     int i;
     var quit = mainloop_quit();
     do {
@@ -221,10 +250,8 @@ function gtk_main_quit()
     int i = gtk_main_level();
     if (i == 0)
         mainloop_quit() =: true;
-    else {
-        var func = dlfunc(getlib(), "gtk_main_quit", "v");
-        func();
-    }
+    else
+        gtkfunc("gtk_main_quit")();
 }
 
 function gtk_check_version(int major, int minor, int micro)
@@ -247,18 +274,15 @@ class Widget : GObject
 {
     function destroy()
     {
-        var func = dlfunc(getlib(), "gtk_widget_destroy", "vp");
-        func(self.gtkw);
+        gtkfunc("gtk_widget_destroy")(self.gtkw);
     }
     function show()
     {
-        var func = dlfunc(getlib(), "gtk_widget_show", "vp");
-        func(self.gtkw);
+        gtkfunc("gtk_widget_show")(self.gtkw);
     }
     function set_size_request(int width, int height)
     {
-        var func = dlfunc(getlib(), "gtk_widget_set_size_request", "vpii");
-        func(self.gtkw, width, height);
+        gtkfunc("gtk_widget_set_size_request")(self.gtkw, width, height);
     }
     function signal_connect(string signal_name, callback,
             data[optional], int has_data[opt_flag])
