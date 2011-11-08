@@ -80,6 +80,8 @@ function getsignatures()
     return {
         "g_free" : "vp",
         "g_object_get" : "vpppp",
+        "gtk_signal_connect_full" : "lppppPpii",
+        "g_signal_handler_disconnect" : "vpl",
         "gtk_check_version" : "piii",
         "gtk_init" : "ipp",
         "gtk_main_level" : "i",
@@ -89,7 +91,15 @@ function getsignatures()
         "gtk_widget_set_size_request" : "vpii",
         "gtk_widget_get_style" : "pp",
         "gtk_widget_get_window" : "pp",
-        "gtk_widget_destroy" : "vp"
+        "gtk_widget_destroy" : "vp",
+        "gtk_window_new" : "pi",
+        "gtk_window_set_title" : "vpp",
+        "gtk_button_new_with_label" : "pp",
+        "gtk_container_set_border_width" : "vpi",
+        "gtk_container_add" : "vpp",
+        "gtk_box_pack_start" : "vppiii",
+        "gtk_vbox_new" : "pii",
+        "gtk_hbox_new" : "pii"
     };
 }
 
@@ -243,8 +253,7 @@ function init(args)
     for (int i = 0; i < argc; ++i)
         pargs[0,i] = string(args[i]);
     var pargc = new 'ManagedStruct'([ DATATYPE_PTR, 0, 0]);
-    var func = gtkfunc("gtk_init");
-    func(pargc, pargs);
+    gtkfunc("gtk_init")(pargc, pargs);
 }
 
 function gtk_main()
@@ -300,7 +309,7 @@ class Widget : GObject
     function signal_connect(string signal_name, callback,
             data[optional], int has_data[opt_flag])
     {
-        var func = dlfunc(getlib(), "gtk_signal_connect_full", "lppppPpii");
+        var func = gtkfunc("gtk_signal_connect_full");
         var callback_function = has_data ?
             function(widget, actualdata)
             {
@@ -320,8 +329,7 @@ class Widget : GObject
     }
     function signal_disconnect(handler_id)
     {
-        var func = dlfunc(getlib(), "g_signal_handler_disconnect", "vpl");
-        func(self.gtkw, handler_id);
+        gtkfunc("g_signal_handler_disconnect")(self.gtkw, handler_id);
     }
 }
 
@@ -405,13 +413,11 @@ class Container : Widget
 {
     function set_border_width(int width)
     {
-        var func = dlfunc(getlib(), "gtk_container_set_border_width", "vpi");
-        func(self.gtkw, width);
+        gtkfunc("gtk_container_set_border_width")(self.gtkw, width);
     }
     function add(item)
     {
-        var func = dlfunc(getlib(), "gtk_container_add", "vpp");
-        func(self.gtkw, item.gtkw);
+        gtkfunc("gtk_container_add")(self.gtkw, item.gtkw);
     }
 }
 
@@ -512,8 +518,8 @@ class Box : Container
 {
     function pack_start(widget, int expand, int fill, int padding)
     {
-        var func = dlfunc(getlib(), "gtk_box_pack_start", "vppiii");
-        func(self.gtkw, widget.gtkw, expand, fill, padding);
+        gtkfunc("gtk_box_pack_start")
+                (self.gtkw, widget.gtkw, expand, fill, padding);
     }
 }
 
@@ -521,7 +527,7 @@ class VBox : Box
 {
     function VBox(int homogeneous, int spacing)
     {
-        var func = dlfunc(getlib(), "gtk_vbox_new", "pii");
+        var func = gtkfunc("gtk_vbox_new");
         self.__gtkset(func(homogeneous, spacing));
     }
 }
@@ -530,7 +536,7 @@ class HBox : Box
 {
     function HBox(int homogeneous, int spacing)
     {
-        var func = dlfunc(getlib(), "gtk_hbox_new", "pii");
+        var func = gtkfunc("gtk_hbox_new");
         self.__gtkset(func(homogeneous, spacing));
     }
 }
@@ -558,13 +564,12 @@ class Window : Bin
 {
     function Window(int level)
     {
-        var func = dlfunc(getlib(), "gtk_window_new", "pi");
+        var func = gtkfunc("gtk_window_new");
         self.__gtkset(func(0));
     }
     function set_title(string title)
     {
-        var func = dlfunc(getlib(), "gtk_window_set_title", "vpp");
-        func(self.gtkw, str_to_cstring(title));
+        gtkfunc("gtk_window_set_title")(self.gtkw, str_to_cstring(title));
     }
 }
 
@@ -592,7 +597,7 @@ class Button : Bin
 {
     function Button(string label)
     {
-        var func = dlfunc(getlib(), "gtk_button_new_with_label", "pp");
+        var func = gtkfunc("gtk_button_new_with_label");
         self.__gtkset(func(str_to_cstring(label)));
     }
 }
