@@ -80,6 +80,7 @@ function getsignatures()
     return {
         "g_free" : "vp",
         "g_object_get" : "vpppp",
+        "gtk_check_version" : "piii",
         "gtk_init" : "ipp",
         "gtk_main_level" : "i",
         "gtk_main_iteration" : "i",
@@ -145,76 +146,88 @@ function __text_iter_free(iter)
 
 function __check_version()
 {
-    var retfunc;
-    var func = dlfunc(getlib(), "gtk_check_version", "piii");
-    if (func == null)
-        retfunc = function (int major, int minor, int micro)
-        {
-            return "Cannot check gtk version";
-        };
-    else retfunc = function (int major, int minor, int micro)
-        {
-            var p = func(major, minor, micro);
-            string result;
-            if (p != null)
-                result = string_from_nci(p);
-            return result;
-        };
-    for (;;) yield retfunc;
+    var ns = namespace internal;
+    var retfunc = ns["__check_version"];
+    if (retfunc == null) {
+        var func = gtkfunc("gtk_check_version");
+        if (func == null)
+            retfunc = function (int major, int minor, int micro)
+            {
+                return "Cannot check gtk version";
+            };
+        else retfunc = function (int major, int minor, int micro)
+            {
+                var p = func(major, minor, micro);
+                string result;
+                if (p != null)
+                    result = string_from_nci(p);
+                return result;
+            };
+         ns["__check_version"] = retfunc;
+    }
+    return retfunc;
 }
 
 function __widget_get_window()
 {
-    var retfunc;
-    var func = gtkfunc("gtk_widget_get_window");
-    if (func != null)
-        retfunc = function (gtkw)
-        {
-            var gdkwindow = func(gtkw);
-            return gdkwindow;
-        };
-    else
-        retfunc = function (gtkw)
-        {
-            // The function gtk_widget_get_window is not available
-            // until Gtk+ 2.14
-            // This is a veeeery convoluted way to get
-            // the window property from the widget.
-            var interp = getinterp();
-            var pointee = new['ManagedStruct']([DATATYPE_INT, 0, 0]);
-            var pointer = new ['Pointer'];
-            var get = get_parrot_func("Parrot_PMC_get_pointer", "ipP");
-            var set = get_parrot_func("Parrot_PMC_set_pointer", "vpPi");
-            if (get == null || set == null) throw "Vaya";
-            int pval = get(interp, pointee);
-            set(interp, pointer, pval);
-            var func = gtkfunc("g_object_get");
-            var p = str_to_cstring('window');
-            func(gtkw, p, pointer, null);
-            int n = pointee[0];
-            var result = new ['UnManagedStruct'];
-            set(interp, result, n);
-            return result;
-        };
-    for (;;) yield retfunc;
+    var ns = namespace internal;
+    var retfunc = ns["__widget_get_window"];
+    if (retfunc == null) {
+        var func = gtkfunc("gtk_widget_get_window");
+        if (func != null)
+            retfunc = function (gtkw)
+            {
+                var gdkwindow = func(gtkw);
+                return gdkwindow;
+            };
+        else
+            retfunc = function (gtkw)
+            {
+                // The function gtk_widget_get_window is not available
+                // until Gtk+ 2.14
+                // This is a veeeery convoluted way to get
+                // the window property from the widget.
+                var interp = getinterp();
+                var pointee = new['ManagedStruct']([DATATYPE_INT, 0, 0]);
+                var pointer = new ['Pointer'];
+                var get = get_parrot_func("Parrot_PMC_get_pointer", "ipP");
+                var set = get_parrot_func("Parrot_PMC_set_pointer", "vpPi");
+                if (get == null || set == null) throw "Vaya";
+                int pval = get(interp, pointee);
+                set(interp, pointer, pval);
+                var func = gtkfunc("g_object_get");
+                var p = str_to_cstring('window');
+                func(gtkw, p, pointer, null);
+                int n = pointee[0];
+                var result = new ['UnManagedStruct'];
+                set(interp, result, n);
+                return result;
+            };
+        ns["__widget_get_window"] = retfunc;
+    }
+    return retfunc;
 }
 
 function __widget_get_style()
 {
-    var retfunc;
-    var func = gtkfunc("gtk_widget_get_style");
-    if (func != null)
-        retfunc = function (gtkw)
-        {
-            var gdkstyke = func(gtkw);
-            return gdkstyke;
-        };
-    else
-        retfunc = function (gtkw)
-        {
-            throw "Can't draw with this gtk";
-        };
-    for (;;) yield retfunc;
+    var ns = namespace internal;
+    var retfunc = ns["__widget_get_style"];
+    if (retfunc == null) {
+        var func = gtkfunc("gtk_widget_get_style");
+        if (func != null)
+            retfunc = function (gtkw)
+            {
+                var gdkstyke = func(gtkw);
+                return gdkstyke;
+            };
+        else
+            retfunc = function (gtkw)
+            {
+                throw "Can't draw with this gtk";
+            };
+        ns["__widget_get_style"] = retfunc;
+    }
+    return retfunc;
 }
 
 } // namespace __private
