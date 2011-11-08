@@ -13,7 +13,10 @@ namespace __private
 
 $include_const 'datatypes.pasm';
 
-function getlib()
+namespace internal
+{
+
+function loadgtklib[anon]()
 {
     var lib;
 
@@ -33,8 +36,18 @@ function getlib()
     if (lib == null)
         throw "Cannot load lib";
 
-    for (;;)
-        yield lib;
+    return lib;
+}
+
+}
+
+function getlib()
+{
+    var ns = namespace internal;
+    var lib = ns["lib"];
+    if (lib == null)
+        ns["lib"] = lib = internal.loadgtklib();
+    return lib;
 }
 
 function get_parrot_func(string name, string signature)
@@ -79,8 +92,11 @@ function gtk_main_level()
 
 function mainloop_quit()
 {
-    var quit = false;
-    for (;;) yield quit;
+    var ns = namespace internal;
+    var quit = ns["quit"];
+    if (quit == null)
+        ns["quit"] = quit = 0;
+    return quit;
 }
 
 function __text_iter_new()
