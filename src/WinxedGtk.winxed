@@ -194,7 +194,10 @@ function gtk_main()
     var func = dlfunc(getlib(), "gtk_main_iteration", "i");
     int i;
     var quit = mainloop_quit();
-    do i = func(); while (i && ! quit);
+    do {
+        i = func();
+        sleep(0.001);
+    } while (i && ! quit);
 }
 
 function gtk_main_quit()
